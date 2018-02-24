@@ -44,6 +44,12 @@
   (/(- number
        (modulo number 1000000))
     1000000))
+    
+(define (E number)
+  (- (/(- number
+       (modulo number 10000))
+    10000)
+     (* (C number) 100)))
 
 (define (f number)
   (-(+
@@ -67,15 +73,11 @@
 ; Contract:
 ; date->day-of-week number: Nat -> Sym
 ; Example:
-(check-expect (date->day-of-week 38781202) 'Monday)
-(check-expect (date->day-of-week 1920303) 'Invalid)
+
 
   
-(define(date->day-of-week number)
+(define(helper number)
   (cond
-    [(< number 17521001) 'Invalid]
-    [(or(< (org_m number) 1) (> (org_m number) 12)) 'Invalid]
-    [(or(< (k number) 1) (> (k number) 31)) 'Invalid]
     [(and (= (m number) 12) (> (k number) 28)) 'Invalid]
     [(and (or (= (m number) 2)
               (= (m number) 4)
@@ -92,8 +94,53 @@
     [else 'Invalid]))
 
 
+(define (year number)
+  (string->number(string-append (number->string (C number))
+                                (number->string (E number)))))
 
+(define (leap number)
+  (cond
+    [(not(integer? (/ (year number) 4))) false]
+    [(and(integer? (/ (year number) 4))
+         (not(integer? (/ (year number) 100)))) true]
+    [(and (integer? (/ (year number) 4))
+          (integer? (/ (year number) 100))        
+          (integer? (/ (year number) 400)))
+     true]
+    [else false])) 
+
+(define(next-day number)
+  (cond 
+    [(equal?(helper (- number 1)) 'Sunday)
+     'Monday]
+    [(equal?(helper (- number 1)) 'Monday)
+     'Tuesday]
+    [(equal?(helper (- number 1)) 'Tuesday)
+     'Wednesday]
+    [(equal?(helper (- number 1)) 'Wednesday)
+     'Thursday]
+    [(equal?(helper (- number 1)) 'Thursday)
+     'Friday]
+    [(equal?(helper (- number 1)) 'Friday)
+     'Saturday]
+    [(equal?(helper (- number 1)) 'Saturday)
+     'Sunday]))
+
+(define (date->day-of-week number)
+  (cond
+    [(< number 17521001) 'Invalid]
+    [(or(< (org_m number) 1) (> (org_m number) 12)) 'Invalid]
+    [(or(< (k number) 1) (> (k number) 31)) 'Invalid]
+    [(and (leap number)
+          (=(org_m number) 2)
+          (=(k number) 29)) 
+     (next-day number)]
+    [else (helper number)]))  
+    
 ; Tests:
+(check-expect (date->day-of-week 38781202) 'Monday)
+(check-expect (date->day-of-week 1920303) 'Invalid)
+
 (check-expect (date->day-of-week 18321401) 'Invalid)
 (check-expect (date->day-of-week 00000000) 'Invalid)
 (check-expect (date->day-of-week 1000000000)'Invalid)
@@ -104,12 +151,10 @@
 (check-expect (date->day-of-week 20180229) 'Invalid)
 (check-expect (date->day-of-week 20180228) 'Wednesday)
 
-
-
-
-
-
     
+    
+
+
 
 
 
